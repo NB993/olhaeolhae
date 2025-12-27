@@ -11,7 +11,9 @@ import {
   FamilyMemberStatus,
   FamilyMemberRelationship,
   FamilyJoinRequest,
-  Announcement
+  Announcement,
+  SaveFamilyMemberRelationshipRequest,
+  SaveFamilyMemberRelationshipResponse
 } from '../../types/family';
 import { CursorPageResponse } from '../../types/api';
 
@@ -318,14 +320,16 @@ export class FamilyService {
 
   /**
    * 새로운 가족 관계를 설정합니다.
+   * 백엔드 엔드포인트: POST /api/families/{familyId}/members/{toMemberId}/relationships
    */
-  public async createFamilyRelationship(
+  public async saveFamilyMemberRelationship(
     familyId: number | string,
-    relationship: Omit<FamilyMemberRelationship, 'id' | 'createdAt' | 'modifiedAt'>
-  ): Promise<FamilyMemberRelationship> {
-    return this.apiClient.post<FamilyMemberRelationship>(
-      `/api/families/${familyId}/relationships`,
-      relationship
+    toMemberId: number | string,
+    request: SaveFamilyMemberRelationshipRequest
+  ): Promise<SaveFamilyMemberRelationshipResponse> {
+    return this.apiClient.post<SaveFamilyMemberRelationshipResponse>(
+      `/api/families/${familyId}/members/${toMemberId}/relationships`,
+      request
     );
   }
 

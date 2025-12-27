@@ -1,16 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { FamilyMemberCard } from '../components/family/FamilyMemberCard';
 import { Button } from '../components/common/Button';
 import { Card, CardContent, CardHeader } from '../components/common/Card';
-import { useFamilyMembers, useFamilyDetail } from '../hooks/queries/useFamilyQueries';
+import { useFamilyMembers, useFamilyDetail, useSaveFamilyMemberRelationship } from '../hooks/queries/useFamilyQueries';
 import { FamilyMemberWithRelationship } from '../api/services/familyService';
+import { RelationshipModal } from '../components/modals/RelationshipModal';
+import { FamilyMemberRelationshipType } from '../types/family';
 
 const FamilyMembersPage: React.FC = () => {
   const { familyId } = useParams<{ familyId: string }>();
   const familyIdNumber = familyId ? parseInt(familyId, 10) : undefined;
   const { data: familyData, isLoading: familyLoading } = useFamilyDetail(familyIdNumber!);
   const { data: membersData, isLoading: membersLoading, isError } = useFamilyMembers(familyIdNumber!);
+  const saveMutation = useSaveFamilyMemberRelationship();
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<FamilyMemberWithRelationship | null>(null);
 
   const isLoading = familyLoading || membersLoading;
   const members = membersData || [];
@@ -21,8 +27,33 @@ const FamilyMembersPage: React.FC = () => {
   };
 
   const handleRelationshipEdit = (member: FamilyMemberWithRelationship) => {
-    // TODO: 관계 설정 모달 열기
-    console.log('Edit relationship for:', member);
+    setSelectedMember(member);
+    setIsModalOpen(true);
+  };
+
+  const handleSaveRelationship = async (
+    relationshipType: FamilyMemberRelationshipType,
+    customRelationship?: string,
+    description?: string
+  ) => {
+    if (!selectedMember || !familyIdNumber) return;
+
+    try {
+      await saveMutation.mutateAsync({
+        familyId: familyIdNumber,
+        toMemberId: selectedMember.memberId,
+        relationshipType,
+        customRelationship,
+        description,
+      });
+
+      alert('관계가 성공적으로 저장되었습니다!');
+      setIsModalOpen(false);
+      setSelectedMember(null);
+    } catch (error) {
+      console.error('Failed to save relationship:', error);
+      alert('관계 저장에 실패했습니다. 다시 시도해주세요.');
+    }
   };
 
   if (!familyId) {
@@ -156,8 +187,20 @@ const FamilyMembersPage: React.FC = () => {
           </Card>
         )}
 
-        {/* TODO: 모달들 */}
-        {/* 멤버 상세 모달, 관계 설정 모달 등 */}
+        {/* 관계 설정 모달 */}
+        {selectedMember && (
+          <RelationshipModal
+            isOpen={isModalOpen}
+            onClose={() => {
+              setIsModalOpen(false);
+              setSelectedMember(null);
+            }}
+            onSave={handleSaveRelationship}
+            memberName={selectedMember.memberName}
+            currentRelationshipType={selectedMember.relationshipType}
+            currentCustomRelationship={selectedMember.customRelationshipName}
+          />
+        )}
       </div>
     </div>
   );

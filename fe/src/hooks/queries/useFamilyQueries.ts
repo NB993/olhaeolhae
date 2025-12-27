@@ -4,10 +4,10 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  FamilyService, 
-  FindFamilyResponse, 
-  SaveFamilyRequest, 
+import {
+  FamilyService,
+  FindFamilyResponse,
+  SaveFamilyRequest,
   SaveFamilyResponse,
   ModifyFamilyRequest,
   PublicFamilyResponse,
@@ -25,7 +25,10 @@ import {
   FamilyMemberRole,
   FamilyMemberStatus,
   FamilyMemberRelationship,
-  FamilyJoinRequest
+  FamilyJoinRequest,
+  SaveFamilyMemberRelationshipRequest,
+  SaveFamilyMemberRelationshipResponse,
+  FamilyMemberRelationshipType
 } from '../../types/family';
 import { CursorPageResponse } from '../../types/api';
 
@@ -328,18 +331,34 @@ export const useUpdateMemberStatus = () => {
 
 /**
  * 새로운 가족 관계를 설정합니다.
+ * 백엔드 API: POST /api/families/{familyId}/members/{toMemberId}/relationships
  */
-export const useCreateFamilyRelationship = () => {
+export const useSaveFamilyMemberRelationship = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: ({ 
-      familyId, 
-      relationship 
-    }: { 
-      familyId: number | string; 
-      relationship: Omit<FamilyMemberRelationship, 'id' | 'createdAt' | 'modifiedAt'> 
-    }) => familyService.createFamilyRelationship(familyId.toString(), relationship),
+    mutationFn: ({
+      familyId,
+      toMemberId,
+      relationshipType,
+      customRelationship,
+      description
+    }: {
+      familyId: number | string;
+      toMemberId: number | string;
+      relationshipType: FamilyMemberRelationshipType;
+      customRelationship?: string;
+      description?: string;
+    }) => {
+      const request: SaveFamilyMemberRelationshipRequest = {
+        familyId: Number(familyId),
+        toMemberId: Number(toMemberId),
+        relationshipType,
+        customRelationship,
+        description,
+      };
+      return familyService.saveFamilyMemberRelationship(familyId, toMemberId, request);
+    },
     onSuccess: (_, { familyId }) => {
       // 가족 관계 목록 무효화
       queryClient.invalidateQueries({
